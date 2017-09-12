@@ -9,6 +9,9 @@ import org.robolectric.annotation.Config;
 import java.io.File;
 import java.util.List;
 
+import static com.blankj.utilcode.util.TestConfig.FILE_SEP;
+import static com.blankj.utilcode.util.TestConfig.LINE_SEP;
+
 /**
  * <pre>
  *     author: Blankj
@@ -21,23 +24,18 @@ import java.util.List;
 @Config(manifest = Config.NONE)
 public class TestUtils {
 
-    static final char FILE_SEP = File.separatorChar;
-
-    private static final String LINE_SEP = System.getProperty("line.separator");
-
-     static String TEST_PATH;
-
     public static void init() {
         Utils.init(RuntimeEnvironment.application);
     }
 
+    //    @Test
     public void readme2Eng() throws Exception {
         formatCN();
         File readmeCN = new File(new File(System.getProperty("user.dir")).getAbsolutePath() + FILE_SEP + "README-CN.md");
         File readmeEng = new File(new File(System.getProperty("user.dir")).getAbsolutePath() + FILE_SEP + "README.md");
-        List<String> list = FileUtils.readFile2List(readmeCN, "UTF-8");
-        StringBuilder sb = new StringBuilder("# Android developers should collect the following utils" + LINE_SEP + LINE_SEP +
-                "[![auc][aucsvg]][auc] [![api][apisvg]][api] [![License][licensesvg]][license]" + LINE_SEP + LINE_SEP +
+        List<String> list = FileIOUtils.readFile2List(readmeCN, "UTF-8");
+        StringBuilder sb = new StringBuilder("![logo][logo]" + LINE_SEP + LINE_SEP +
+                "[![auc][aucsvg]][auc] [![api][apisvg]][api] [![build][buildsvg]][build] [![Insight][insightsvg]][insight] [![License][licensesvg]][license]" + LINE_SEP + LINE_SEP +
                 "## [README of Chinese][readme-cn.md]" + LINE_SEP + LINE_SEP +
                 "## API" + LINE_SEP + LINE_SEP);
         List<String> lines = list.subList(8, list.size());
@@ -47,12 +45,12 @@ public class TestUtils {
                     String utilsName = line.substring(line.indexOf("[") + 1, line.indexOf("Utils"));
                     sb.append("* ### About ").append(utilsName).append(line.substring(line.indexOf("→")));
                 } else {
-                    sb.append("* ### About Log→[update_log.md][update_log.md]**");
+                    sb.append("* ### About Log→[update_log.md][update_log.md]");
                 }
             } else if (line.contains(": ") && !line.contains("[")) {
                 sb.append(line.substring(0, line.indexOf(':')).trim());
             } else if (line.contains("* 做")) {
-                sb.append("**I'm so sorry for that the code is annotated with Chinese.**");
+                sb.append("* **I'm so sorry for that the code is annotated with Chinese.**");
             } else if (line.contains("* QQ") || line.contains("* 我的")) {
                 continue;
             } else {
@@ -60,12 +58,12 @@ public class TestUtils {
             }
             sb.append(LINE_SEP);
         }
-        FileUtils.writeFileFromString(readmeEng, sb.toString(), false);
+        FileIOUtils.writeFileFromString(readmeEng, sb.toString());
     }
 
     public void formatCN() throws Exception {
         File readmeCN = new File(new File(System.getProperty("user.dir")).getAbsolutePath() + FILE_SEP + "README-CN.md");
-        List<String> list = FileUtils.readFile2List(readmeCN, "UTF-8");
+        List<String> list = FileIOUtils.readFile2List(readmeCN, "UTF-8");
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 4; i++) {
             sb.append(list.get(i)).append(LINE_SEP);
@@ -102,23 +100,10 @@ public class TestUtils {
             }
             sb.append(LINE_SEP);
         }
-        FileUtils.writeFileFromString(readmeCN, sb.toString(), false);
+        FileIOUtils.writeFileFromString(readmeCN, sb.toString(), false);
     }
 
     @Test
     public void test() throws Exception {
-        System.out.println(System.getProperty("user.dir"));
-        System.out.println(new File("").getAbsoluteFile().toString());
-    }
-
-    public static String getTestPath() {
-        if (TEST_PATH == null) {
-            String projectPath = System.getProperty("user.dir");
-            if (!projectPath.contains("utilcode")) {
-                projectPath += FILE_SEP + "utilcode";
-            }
-            TEST_PATH = projectPath + FILE_SEP + "src" + FILE_SEP + "test" + FILE_SEP + "res";
-        }
-        return TEST_PATH;
     }
 }

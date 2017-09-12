@@ -4,28 +4,14 @@ import com.blankj.utilcode.constant.TimeConstants;
 
 import org.junit.Test;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
-import static com.blankj.utilcode.util.TimeUtils.date2Millis;
-import static com.blankj.utilcode.util.TimeUtils.date2String;
-import static com.blankj.utilcode.util.TimeUtils.getChineseZodiac;
-import static com.blankj.utilcode.util.TimeUtils.getFriendlyTimeSpanByNow;
-import static com.blankj.utilcode.util.TimeUtils.getNowMills;
-import static com.blankj.utilcode.util.TimeUtils.getNowString;
-import static com.blankj.utilcode.util.TimeUtils.getString;
-import static com.blankj.utilcode.util.TimeUtils.getTimeSpan;
-import static com.blankj.utilcode.util.TimeUtils.getWeek;
-import static com.blankj.utilcode.util.TimeUtils.getWeekIndex;
-import static com.blankj.utilcode.util.TimeUtils.getWeekOfMonth;
-import static com.blankj.utilcode.util.TimeUtils.getWeekOfYear;
-import static com.blankj.utilcode.util.TimeUtils.getZodiac;
-import static com.blankj.utilcode.util.TimeUtils.isLeapYear;
-import static com.blankj.utilcode.util.TimeUtils.isSameDay;
-import static com.blankj.utilcode.util.TimeUtils.millis2Date;
-import static com.blankj.utilcode.util.TimeUtils.millis2String;
-import static com.blankj.utilcode.util.TimeUtils.string2Date;
-import static com.blankj.utilcode.util.TimeUtils.string2Millis;
-import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -38,126 +24,249 @@ import static com.google.common.truth.Truth.assertThat;
  */
 public class TimeUtilsTest {
 
-    String myPattern = "yyyy-MM-dd HH:mm:ss zzzz";
-    long millis = 1470991049000L;
-    Date timeDate = new Date(millis);
-    String timeString = "2016-08-12 16:37:29";
-    String tomorrowTimeString = "2016-08-13 16:37:29";
-    String myTimeString = "2016-08-12 16:37:29 中国标准时间";
-    String timeString0 = "2016-08-12 16:00:00";
-    String timeString1 = "2016-08-12 17:10:10";
-    String myTimeString0 = "2016-08-12 16:00:00 中国标准时间";
-    String myTimeString1 = "2016-08-12 17:10:10 中国标准时间";
+    private final DateFormat defaultFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+    private final DateFormat mFormat       = new SimpleDateFormat("yyyy MM dd HH:mm:ss", Locale.getDefault());
+
+    private final long   timeMillis               = 1493887049000L;
+    private final Date   timeDate                 = new Date(timeMillis);
+    private final String timeString               = defaultFormat.format(timeDate);
+    private final String timeStringFormat         = mFormat.format(timeDate);
+    private final long   tomorrowTimeMillis       = 1493973449000L;
+    private final Date   tomorrowTimeDate         = new Date(tomorrowTimeMillis);
+    private final String tomorrowTimeString       = defaultFormat.format(tomorrowTimeDate);
+    private final String tomorrowTimeStringFormat = mFormat.format(tomorrowTimeDate);
+    private final long   delta                    = 2;// 允许误差2ms
 
     @Test
-    public void testMillis2String() throws Exception {
-        assertThat(millis2String(millis)).isEqualTo(timeString);
-        assertThat(millis2String(millis, myPattern)).isEqualTo(myTimeString);
+    public void millis2String() throws Exception {
+        assertEquals(timeString, TimeUtils.millis2String(timeMillis));
+        assertEquals(timeStringFormat, TimeUtils.millis2String(timeMillis, mFormat));
     }
 
     @Test
-    public void testString2Millis() throws Exception {
-        assertThat(string2Millis(timeString)).isEqualTo(millis);
-        assertThat(string2Millis(myTimeString, myPattern)).isEqualTo(millis);
+    public void string2Millis() throws Exception {
+        assertEquals(timeMillis, TimeUtils.string2Millis(timeString));
+        assertEquals(timeMillis, TimeUtils.string2Millis(timeStringFormat, mFormat));
     }
 
     @Test
-    public void testString2Date() throws Exception {
-        assertThat(string2Date(timeString)).isEqualTo(timeDate);
-        assertThat(string2Date(myTimeString, myPattern)).isEqualTo(timeDate);
+    public void string2Date() throws Exception {
+        assertEquals(timeDate, TimeUtils.string2Date(timeString));
+        assertEquals(timeDate, TimeUtils.string2Date(timeStringFormat, mFormat));
     }
 
     @Test
-    public void testDate2String() throws Exception {
-        assertThat(date2String(timeDate)).isEqualTo(timeString);
-        assertThat(date2String(timeDate, myPattern)).isEqualTo(myTimeString);
+    public void date2String() throws Exception {
+        assertEquals(timeString, TimeUtils.date2String(timeDate));
+        assertEquals(timeStringFormat, TimeUtils.date2String(timeDate, mFormat));
     }
 
     @Test
-    public void testDate2Millis() throws Exception {
-        assertThat(date2Millis(timeDate)).isEqualTo(millis);
+    public void date2Millis() throws Exception {
+        assertEquals(timeMillis, TimeUtils.date2Millis(timeDate));
     }
 
     @Test
-    public void testMillis2Date() throws Exception {
-        assertThat(millis2Date(millis)).isEqualTo(timeDate);
+    public void millis2Date() throws Exception {
+        assertEquals(timeDate, TimeUtils.millis2Date(timeMillis));
     }
 
     @Test
-    public void testGetTimeSpan() throws Exception {
-        assertThat(getTimeSpan(timeString0, timeString1, TimeConstants.SEC)).isEqualTo(4210);
-        assertThat(getTimeSpan(myTimeString0, myTimeString1, TimeConstants.SEC, myPattern)).isEqualTo(4210);
-        assertThat(getTimeSpan(new Date(4210000), new Date(0), TimeConstants.SEC)).isEqualTo(4210);
+    public void getTimeSpan() throws Exception {
+        long testTimeMillis = timeMillis + 120 * TimeConstants.SEC;
+        String testTimeString = TimeUtils.millis2String(testTimeMillis);
+        String testTimeStringFormat = TimeUtils.millis2String(testTimeMillis, mFormat);
+        Date testTimeDate = TimeUtils.millis2Date(testTimeMillis);
+        assertEquals(120, TimeUtils.getTimeSpan(timeString, testTimeString, TimeConstants.SEC));
+        assertEquals(2, TimeUtils.getTimeSpan(timeStringFormat, testTimeStringFormat, mFormat, TimeConstants.MIN));
+        assertEquals(2, TimeUtils.getTimeSpan(timeDate, testTimeDate, TimeConstants.MIN));
+        assertEquals(120, TimeUtils.getTimeSpan(timeMillis, testTimeMillis, TimeConstants.SEC));
     }
 
     @Test
-    public void testGetCurTimeMills() throws Exception {
-        long interval = getNowMills() - System.currentTimeMillis();
-        assertThat(interval).isLessThan(10L);
+    public void getFitTimeSpan() throws Exception {
+        long testTimeMillis = timeMillis + 10 * TimeConstants.DAY + 10 * TimeConstants.MIN + 10 * TimeConstants.SEC;
+        String testTimeString = TimeUtils.millis2String(testTimeMillis);
+        String testTimeStringFormat = TimeUtils.millis2String(testTimeMillis, mFormat);
+        Date testTimeDate = TimeUtils.millis2Date(testTimeMillis);
+        assertEquals("10天10分钟10秒", TimeUtils.getFitTimeSpan(timeString, testTimeString, 5));
+        assertEquals("10天10分钟10秒", TimeUtils.getFitTimeSpan(timeStringFormat, testTimeStringFormat, mFormat, 5));
+        assertEquals("10天10分钟10秒", TimeUtils.getFitTimeSpan(timeDate, testTimeDate, 5));
+        assertEquals("10天10分钟10秒", TimeUtils.getFitTimeSpan(timeMillis, testTimeMillis, 5));
     }
 
     @Test
-    public void testGetCurTimeString() throws Exception {
-        System.out.println(getNowString());
-        System.out.println(getNowString(myPattern));
+    public void getNowMills() throws Exception {
+        assertEquals(System.currentTimeMillis(), TimeUtils.getNowMills(), delta);
     }
 
     @Test
-    public void testGetFriendlyTimeSpanByNow() throws Exception {
-        System.out.println(getFriendlyTimeSpanByNow(System.currentTimeMillis()));
-        System.out.println(getFriendlyTimeSpanByNow(System.currentTimeMillis() - 6 * TimeConstants.SEC));
-        System.out.println(getFriendlyTimeSpanByNow(System.currentTimeMillis() - 6 * TimeConstants.MIN));
-        System.out.println(getFriendlyTimeSpanByNow(System.currentTimeMillis() - 6 * TimeConstants.HOUR));
-        System.out.println(getFriendlyTimeSpanByNow(System.currentTimeMillis() - TimeConstants.DAY));
-        System.out.println(getFriendlyTimeSpanByNow(System.currentTimeMillis() - 2 * TimeConstants.DAY));
+    public void getNowString() throws Exception {
+        assertEquals(System.currentTimeMillis(), TimeUtils.string2Millis(TimeUtils.getNowString()), delta);
+        assertEquals(System.currentTimeMillis(), TimeUtils.string2Millis(TimeUtils.getNowString(mFormat), mFormat), delta);
     }
 
     @Test
-    public void testGetString() throws Exception {
-        assertThat(tomorrowTimeString).isEqualTo(getString(millis, 1, TimeConstants.DAY));
+    public void getNowDate() throws Exception {
+        assertEquals(System.currentTimeMillis(), TimeUtils.date2Millis(TimeUtils.getNowDate()), delta);
     }
 
     @Test
-    public void testIsSameDay() throws Exception {
-        System.out.println(isSameDay(System.currentTimeMillis()));
-        System.out.println(isSameDay((System.currentTimeMillis() / TimeConstants.DAY) * TimeConstants.DAY - 8 * TimeConstants.HOUR));
-        System.out.println(isSameDay((System.currentTimeMillis() / TimeConstants.DAY) * TimeConstants.DAY + 16 * TimeConstants.HOUR));
+    public void getTimeSpanByNow() throws Exception {
+        assertEquals(0, TimeUtils.getTimeSpanByNow(TimeUtils.getNowString(), TimeConstants.MSEC), delta);
+        assertEquals(0, TimeUtils.getTimeSpanByNow(TimeUtils.getNowString(mFormat), mFormat, TimeConstants.MSEC), delta);
+        assertEquals(0, TimeUtils.getTimeSpanByNow(TimeUtils.getNowDate(), TimeConstants.MSEC), delta);
+        assertEquals(0, TimeUtils.getTimeSpanByNow(TimeUtils.getNowMills(), TimeConstants.MSEC), delta);
     }
 
     @Test
-    public void testIsLeapYear() throws Exception {
-        assertThat(isLeapYear(2012)).isEqualTo(true);
-        assertThat(isLeapYear(2000)).isEqualTo(true);
-        assertThat(isLeapYear(1900)).isEqualTo(false);
+    public void getFitTimeSpanByNow() throws Exception {
+        long spanMillis = 6 * TimeConstants.DAY + 6 * TimeConstants.HOUR + 6 * TimeConstants.MIN + 6 * TimeConstants.SEC;
+        assertEquals("6天6小时6分钟6秒", TimeUtils.getFitTimeSpanByNow(TimeUtils.millis2String(System.currentTimeMillis() + spanMillis), 5));
+        assertEquals("6天6小时6分钟6秒", TimeUtils.getFitTimeSpanByNow(TimeUtils.millis2String(System.currentTimeMillis() + spanMillis, mFormat), mFormat, 5));
+        assertEquals("6天6小时6分钟6秒", TimeUtils.getFitTimeSpanByNow(TimeUtils.millis2Date(System.currentTimeMillis() + spanMillis), 5));
+        assertEquals("6天6小时6分钟6秒", TimeUtils.getFitTimeSpanByNow(System.currentTimeMillis() + spanMillis, 5));
     }
 
     @Test
-    public void testGetWeek() throws Exception {
-        assertThat(getWeek(timeString)).isEqualTo("星期五");
+    public void getFriendlyTimeSpanByNow() throws Exception {
+        assertEquals("刚刚", TimeUtils.getFriendlyTimeSpanByNow(TimeUtils.getNowString()));
+        assertEquals("刚刚", TimeUtils.getFriendlyTimeSpanByNow(TimeUtils.getNowString(mFormat), mFormat));
+        assertEquals("刚刚", TimeUtils.getFriendlyTimeSpanByNow(TimeUtils.getNowDate()));
+        assertEquals("刚刚", TimeUtils.getFriendlyTimeSpanByNow(TimeUtils.getNowMills()));
+        assertEquals("1秒前", TimeUtils.getFriendlyTimeSpanByNow(TimeUtils.getNowMills() - TimeConstants.SEC));
+        assertEquals("1分钟前", TimeUtils.getFriendlyTimeSpanByNow(TimeUtils.getNowMills() - TimeConstants.MIN));
     }
 
     @Test
-    public void testGetWeekIndex() throws Exception {
-        assertThat(getWeekIndex(timeString)).isEqualTo(6);
+    public void getMillis() throws Exception {
+        assertEquals(tomorrowTimeMillis, TimeUtils.getMillis(timeMillis, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeMillis, TimeUtils.getMillis(timeString, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeMillis, TimeUtils.getMillis(timeStringFormat, mFormat, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeMillis, TimeUtils.getMillis(timeDate, 1, TimeConstants.DAY));
     }
 
     @Test
-    public void testGetOfMonth() throws Exception {
-        assertThat(getWeekOfMonth(timeString)).isEqualTo(2);
+    public void getString() throws Exception {
+        assertEquals(tomorrowTimeString, TimeUtils.getString(timeMillis, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeStringFormat, TimeUtils.getString(timeMillis, mFormat, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeString, TimeUtils.getString(timeString, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeStringFormat, TimeUtils.getString(timeStringFormat, mFormat, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeString, TimeUtils.getString(timeDate, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeStringFormat, TimeUtils.getString(timeDate, mFormat, 1, TimeConstants.DAY));
     }
 
     @Test
-    public void testGetOfYear() throws Exception {
-        assertThat(getWeekOfYear(timeString)).isEqualTo(33);
+    public void getDate() throws Exception {
+        assertEquals(tomorrowTimeDate, TimeUtils.getDate(timeMillis, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeDate, TimeUtils.getDate(timeString, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeDate, TimeUtils.getDate(timeStringFormat, mFormat, 1, TimeConstants.DAY));
+        assertEquals(tomorrowTimeDate, TimeUtils.getDate(timeDate, 1, TimeConstants.DAY));
     }
 
     @Test
-    public void testGetChineseZodiac() throws Exception {
-        System.out.println(getChineseZodiac(System.currentTimeMillis()));
+    public void getMillisByNow() throws Exception {
+        assertEquals(System.currentTimeMillis() + TimeConstants.DAY, TimeUtils.getMillisByNow(1, TimeConstants.DAY), delta);
     }
 
     @Test
-    public void testGetZodiac() throws Exception {
-        assertThat(getZodiac("2016-08-16 16:37:29")).isEqualTo("狮子座");
+    public void getStringByNow() throws Exception {
+        long tomorrowMillis = TimeUtils.string2Millis(TimeUtils.getStringByNow(1, TimeConstants.DAY));
+        assertEquals(System.currentTimeMillis() + TimeConstants.DAY, tomorrowMillis, delta);
+        tomorrowMillis = TimeUtils.string2Millis(TimeUtils.getStringByNow(1, mFormat, TimeConstants.DAY), mFormat);
+        assertEquals(System.currentTimeMillis() + TimeConstants.DAY, tomorrowMillis, delta);
+    }
+
+    @Test
+    public void getDateByNow() throws Exception {
+        long tomorrowMillis = TimeUtils.date2Millis(TimeUtils.getDateByNow(1, TimeConstants.DAY));
+        assertEquals(System.currentTimeMillis() + TimeConstants.DAY, TimeUtils.getMillisByNow(1, TimeConstants.DAY), delta);
+    }
+
+    @Test
+    public void isToday() throws Exception {
+        long todayTimeMillis = System.currentTimeMillis();
+        String todayTimeString = TimeUtils.millis2String(todayTimeMillis);
+        String todayTimeStringFormat = TimeUtils.millis2String(todayTimeMillis, mFormat);
+        Date todayTimeDate = TimeUtils.millis2Date(todayTimeMillis);
+        long tomorrowTimeMillis = todayTimeMillis + TimeConstants.DAY;
+        String tomorrowTimeString = TimeUtils.millis2String(tomorrowTimeMillis);
+        Date tomorrowTimeDate = TimeUtils.millis2Date(tomorrowTimeMillis);
+        assertTrue(TimeUtils.isToday(todayTimeString));
+        assertTrue(TimeUtils.isToday(todayTimeStringFormat, mFormat));
+        assertTrue(TimeUtils.isToday(todayTimeDate));
+        assertTrue(TimeUtils.isToday(todayTimeMillis));
+        assertFalse(TimeUtils.isToday(tomorrowTimeString));
+        assertFalse(TimeUtils.isToday(tomorrowTimeStringFormat, mFormat));
+        assertFalse(TimeUtils.isToday(tomorrowTimeDate));
+        assertFalse(TimeUtils.isToday(tomorrowTimeMillis));
+    }
+
+    @Test
+    public void isLeapYear() throws Exception {
+        assertFalse(TimeUtils.isLeapYear(timeString));
+        assertFalse(TimeUtils.isLeapYear(timeStringFormat, mFormat));
+        assertFalse(TimeUtils.isLeapYear(timeDate));
+        assertFalse(TimeUtils.isLeapYear(timeMillis));
+        assertTrue(TimeUtils.isLeapYear(2016));
+        assertFalse(TimeUtils.isLeapYear(2017));
+    }
+
+    @Test
+    public void getChineseWeek() throws Exception {
+        assertEquals("星期四", TimeUtils.getChineseWeek(timeString));
+        assertEquals("星期四", TimeUtils.getChineseWeek(timeStringFormat, mFormat));
+        assertEquals("星期四", TimeUtils.getChineseWeek(timeDate));
+        assertEquals("星期四", TimeUtils.getChineseWeek(timeMillis));
+    }
+
+    @Test
+    public void getUSWeek() throws Exception {
+        assertEquals("Thursday", TimeUtils.getUSWeek(timeString));
+        assertEquals("Thursday", TimeUtils.getUSWeek(timeStringFormat, mFormat));
+        assertEquals("Thursday", TimeUtils.getUSWeek(timeDate));
+        assertEquals("Thursday", TimeUtils.getUSWeek(timeMillis));
+    }
+
+    @Test
+    public void getWeekIndex() throws Exception {
+        assertEquals(5, TimeUtils.getWeekIndex(timeString));
+        assertEquals(5, TimeUtils.getWeekIndex(timeStringFormat, mFormat));
+        assertEquals(5, TimeUtils.getWeekIndex(timeDate));
+        assertEquals(5, TimeUtils.getWeekIndex(timeMillis));
+    }
+
+    @Test
+    public void getWeekOfMonth() throws Exception {
+        assertEquals(1, TimeUtils.getWeekOfMonth(timeString));
+        assertEquals(1, TimeUtils.getWeekOfMonth(timeStringFormat, mFormat));
+        assertEquals(1, TimeUtils.getWeekOfMonth(timeDate));
+        assertEquals(1, TimeUtils.getWeekOfMonth(timeMillis));
+    }
+
+    @Test
+    public void getWeekOfYear() throws Exception {
+        assertEquals(18, TimeUtils.getWeekOfYear(timeString));
+        assertEquals(18, TimeUtils.getWeekOfYear(timeStringFormat, mFormat));
+        assertEquals(18, TimeUtils.getWeekOfYear(timeDate));
+        assertEquals(18, TimeUtils.getWeekOfYear(timeMillis));
+    }
+
+    @Test
+    public void getChineseZodiac() throws Exception {
+        assertEquals("鸡", TimeUtils.getChineseZodiac(timeString));
+        assertEquals("鸡", TimeUtils.getChineseZodiac(timeStringFormat, mFormat));
+        assertEquals("鸡", TimeUtils.getChineseZodiac(timeDate));
+        assertEquals("鸡", TimeUtils.getChineseZodiac(timeMillis));
+        assertEquals("鸡", TimeUtils.getChineseZodiac(2017));
+    }
+
+    @Test
+    public void getZodiac() throws Exception {
+        assertEquals("金牛座", TimeUtils.getZodiac(timeString));
+        assertEquals("金牛座", TimeUtils.getZodiac(timeStringFormat, mFormat));
+        assertEquals("金牛座", TimeUtils.getZodiac(timeDate));
+        assertEquals("金牛座", TimeUtils.getZodiac(timeMillis));
+        assertEquals("狮子座", TimeUtils.getZodiac(8, 16));
     }
 }

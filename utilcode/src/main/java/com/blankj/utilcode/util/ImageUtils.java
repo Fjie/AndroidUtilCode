@@ -1,8 +1,6 @@
 package com.blankj.utilcode.util;
 
 import android.annotation.TargetApi;
-import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
@@ -22,13 +20,13 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.NinePatchDrawable;
 import android.media.ExifInterface;
 import android.os.Build;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicBlur;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.FloatRange;
 import android.support.annotation.IntRange;
 import android.view.View;
@@ -66,7 +64,7 @@ public final class ImageUtils {
      * @param format 格式
      * @return 字节数组
      */
-    public static byte[] bitmap2Bytes(Bitmap bitmap, CompressFormat format) {
+    public static byte[] bitmap2Bytes(final Bitmap bitmap, final CompressFormat format) {
         if (bitmap == null) return null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         bitmap.compress(format, 100, baos);
@@ -79,7 +77,7 @@ public final class ImageUtils {
      * @param bytes 字节数组
      * @return bitmap
      */
-    public static Bitmap bytes2Bitmap(byte[] bytes) {
+    public static Bitmap bytes2Bitmap(final byte[] bytes) {
         return (bytes == null || bytes.length == 0) ? null : BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
     }
 
@@ -89,32 +87,35 @@ public final class ImageUtils {
      * @param drawable drawable对象
      * @return bitmap
      */
-    public static Bitmap drawable2Bitmap(Drawable drawable) {
+    public static Bitmap drawable2Bitmap(final Drawable drawable) {
         if (drawable instanceof BitmapDrawable) {
-            return ((BitmapDrawable) drawable).getBitmap();
-        } else if (drawable instanceof NinePatchDrawable) {
-            Bitmap bitmap = Bitmap.createBitmap(
-                    drawable.getIntrinsicWidth(),
-                    drawable.getIntrinsicHeight(),
-                    drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
-            Canvas canvas = new Canvas(bitmap);
-            drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-            drawable.draw(canvas);
-            return bitmap;
-        } else {
-            return null;
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+            if (bitmapDrawable.getBitmap() != null) {
+                return bitmapDrawable.getBitmap();
+            }
         }
+        Bitmap bitmap;
+        if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+            bitmap = Bitmap.createBitmap(1, 1,
+                    drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
+        } else {
+            bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(),
+                    drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
+        }
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bitmap;
     }
 
     /**
      * bitmap转drawable
      *
-     * @param res    resources对象
      * @param bitmap bitmap对象
      * @return drawable
      */
-    public static Drawable bitmap2Drawable(Resources res, Bitmap bitmap) {
-        return bitmap == null ? null : new BitmapDrawable(res, bitmap);
+    public static Drawable bitmap2Drawable(final Bitmap bitmap) {
+        return bitmap == null ? null : new BitmapDrawable(Utils.getApp().getResources(), bitmap);
     }
 
     /**
@@ -124,19 +125,18 @@ public final class ImageUtils {
      * @param format   格式
      * @return 字节数组
      */
-    public static byte[] drawable2Bytes(Drawable drawable, CompressFormat format) {
+    public static byte[] drawable2Bytes(final Drawable drawable, final CompressFormat format) {
         return drawable == null ? null : bitmap2Bytes(drawable2Bitmap(drawable), format);
     }
 
     /**
      * byteArr转drawable
      *
-     * @param res   resources对象
      * @param bytes 字节数组
      * @return drawable
      */
-    public static Drawable bytes2Drawable(Resources res, byte[] bytes) {
-        return res == null ? null : bitmap2Drawable(res, bytes2Bitmap(bytes));
+    public static Drawable bytes2Drawable(final byte[] bytes) {
+        return bitmap2Drawable(bytes2Bitmap(bytes));
     }
 
     /**
@@ -145,7 +145,7 @@ public final class ImageUtils {
      * @param view 视图
      * @return bitmap
      */
-    public static Bitmap view2Bitmap(View view) {
+    public static Bitmap view2Bitmap(final View view) {
         if (view == null) return null;
         Bitmap ret = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(ret);
@@ -167,12 +167,12 @@ public final class ImageUtils {
      * @param maxHeight 最大高度
      * @return 采样大小
      */
-    private static int calculateInSampleSize(BitmapFactory.Options options, int maxWidth, int maxHeight) {
+    private static int calculateInSampleSize(final BitmapFactory.Options options, final int maxWidth, final int maxHeight) {
         if (maxWidth == 0 || maxHeight == 0) return 1;
         int height = options.outHeight;
         int width = options.outWidth;
         int inSampleSize = 1;
-        while ((height >>= 1) >= maxHeight && (width >>= 1) >= maxWidth) {
+        while ((height >>= 1) > maxHeight && (width >>= 1) > maxWidth) {
             inSampleSize <<= 1;
         }
         return inSampleSize;
@@ -184,7 +184,7 @@ public final class ImageUtils {
      * @param file 文件
      * @return bitmap
      */
-    public static Bitmap getBitmap(File file) {
+    public static Bitmap getBitmap(final File file) {
         if (file == null) return null;
         InputStream is = null;
         try {
@@ -206,7 +206,7 @@ public final class ImageUtils {
      * @param maxHeight 最大高度
      * @return bitmap
      */
-    public static Bitmap getBitmap(File file, int maxWidth, int maxHeight) {
+    public static Bitmap getBitmap(final File file, final int maxWidth, final int maxHeight) {
         if (file == null) return null;
         InputStream is = null;
         try {
@@ -231,7 +231,7 @@ public final class ImageUtils {
      * @param filePath 文件路径
      * @return bitmap
      */
-    public static Bitmap getBitmap(String filePath) {
+    public static Bitmap getBitmap(final String filePath) {
         if (isSpace(filePath)) return null;
         return BitmapFactory.decodeFile(filePath);
     }
@@ -244,7 +244,7 @@ public final class ImageUtils {
      * @param maxHeight 最大高度
      * @return bitmap
      */
-    public static Bitmap getBitmap(String filePath, int maxWidth, int maxHeight) {
+    public static Bitmap getBitmap(final String filePath, final int maxWidth, final int maxHeight) {
         if (isSpace(filePath)) return null;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -260,7 +260,7 @@ public final class ImageUtils {
      * @param is 输入流
      * @return bitmap
      */
-    public static Bitmap getBitmap(InputStream is) {
+    public static Bitmap getBitmap(final InputStream is) {
         if (is == null) return null;
         return BitmapFactory.decodeStream(is);
     }
@@ -273,7 +273,7 @@ public final class ImageUtils {
      * @param maxHeight 最大高度
      * @return bitmap
      */
-    public static Bitmap getBitmap(InputStream is, int maxWidth, int maxHeight) {
+    public static Bitmap getBitmap(final InputStream is, final int maxWidth, final int maxHeight) {
         if (is == null) return null;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -290,7 +290,7 @@ public final class ImageUtils {
      * @param offset 偏移量
      * @return bitmap
      */
-    public static Bitmap getBitmap(byte[] data, int offset) {
+    public static Bitmap getBitmap(final byte[] data, final int offset) {
         if (data.length == 0) return null;
         return BitmapFactory.decodeByteArray(data, offset, data.length);
     }
@@ -304,7 +304,7 @@ public final class ImageUtils {
      * @param maxHeight 最大高度
      * @return bitmap
      */
-    public static Bitmap getBitmap(byte[] data, int offset, int maxWidth, int maxHeight) {
+    public static Bitmap getBitmap(final byte[] data, final int offset, final int maxWidth, final int maxHeight) {
         if (data.length == 0) return null;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -317,32 +317,28 @@ public final class ImageUtils {
     /**
      * 获取bitmap
      *
-     * @param res 资源对象
-     * @param id  资源id
+     * @param resId 资源id
      * @return bitmap
      */
-    public static Bitmap getBitmap(Resources res, int id) {
-        if (res == null) return null;
-        return BitmapFactory.decodeResource(res, id);
+    public static Bitmap getBitmap(@DrawableRes final int resId) {
+        return BitmapFactory.decodeResource(Utils.getApp().getResources(), resId);
     }
 
     /**
      * 获取bitmap
      *
-     * @param res       资源对象
-     * @param id        资源id
+     * @param resId     资源id
      * @param maxWidth  最大宽度
      * @param maxHeight 最大高度
      * @return bitmap
      */
-    public static Bitmap getBitmap(Resources res, int id, int maxWidth, int maxHeight) {
-        if (res == null) return null;
+    public static Bitmap getBitmap(@DrawableRes final int resId, final int maxWidth, final int maxHeight) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
-        BitmapFactory.decodeResource(res, id, options);
+        BitmapFactory.decodeResource(Utils.getApp().getResources(), resId, options);
         options.inSampleSize = calculateInSampleSize(options, maxWidth, maxHeight);
         options.inJustDecodeBounds = false;
-        return BitmapFactory.decodeResource(res, id, options);
+        return BitmapFactory.decodeResource(Utils.getApp().getResources(), resId, options);
     }
 
     /**
@@ -351,7 +347,7 @@ public final class ImageUtils {
      * @param fd 文件描述
      * @return bitmap
      */
-    public static Bitmap getBitmap(FileDescriptor fd) {
+    public static Bitmap getBitmap(final FileDescriptor fd) {
         if (fd == null) return null;
         return BitmapFactory.decodeFileDescriptor(fd);
     }
@@ -364,7 +360,7 @@ public final class ImageUtils {
      * @param maxHeight 最大高度
      * @return bitmap
      */
-    public static Bitmap getBitmap(FileDescriptor fd, int maxWidth, int maxHeight) {
+    public static Bitmap getBitmap(final FileDescriptor fd, final int maxWidth, final int maxHeight) {
         if (fd == null) return null;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -382,7 +378,7 @@ public final class ImageUtils {
      * @param newHeight 新高度
      * @return 缩放后的图片
      */
-    public static Bitmap scale(Bitmap src, int newWidth, int newHeight) {
+    public static Bitmap scale(final Bitmap src, final int newWidth, final int newHeight) {
         return scale(src, newWidth, newHeight, false);
     }
 
@@ -395,7 +391,7 @@ public final class ImageUtils {
      * @param recycle   是否回收
      * @return 缩放后的图片
      */
-    public static Bitmap scale(Bitmap src, int newWidth, int newHeight, boolean recycle) {
+    public static Bitmap scale(final Bitmap src, final int newWidth, final int newHeight, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         Bitmap ret = Bitmap.createScaledBitmap(src, newWidth, newHeight, true);
         if (recycle && !src.isRecycled()) src.recycle();
@@ -410,7 +406,7 @@ public final class ImageUtils {
      * @param scaleHeight 缩放高度倍数
      * @return 缩放后的图片
      */
-    public static Bitmap scale(Bitmap src, float scaleWidth, float scaleHeight) {
+    public static Bitmap scale(final Bitmap src, final float scaleWidth, final float scaleHeight) {
         return scale(src, scaleWidth, scaleHeight, false);
     }
 
@@ -423,7 +419,7 @@ public final class ImageUtils {
      * @param recycle     是否回收
      * @return 缩放后的图片
      */
-    public static Bitmap scale(Bitmap src, float scaleWidth, float scaleHeight, boolean recycle) {
+    public static Bitmap scale(final Bitmap src, final float scaleWidth, final float scaleHeight, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         Matrix matrix = new Matrix();
         matrix.setScale(scaleWidth, scaleHeight);
@@ -442,7 +438,7 @@ public final class ImageUtils {
      * @param height 裁剪高度
      * @return 裁剪后的图片
      */
-    public static Bitmap clip(Bitmap src, int x, int y, int width, int height) {
+    public static Bitmap clip(final Bitmap src, final int x, final int y, final int width, final int height) {
         return clip(src, x, y, width, height, false);
     }
 
@@ -457,7 +453,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return 裁剪后的图片
      */
-    public static Bitmap clip(Bitmap src, int x, int y, int width, int height, boolean recycle) {
+    public static Bitmap clip(final Bitmap src, final int x, final int y, final int width, final int height, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         Bitmap ret = Bitmap.createBitmap(src, x, y, width, height);
         if (recycle && !src.isRecycled()) src.recycle();
@@ -472,7 +468,7 @@ public final class ImageUtils {
      * @param ky  倾斜因子y
      * @return 倾斜后的图片
      */
-    public static Bitmap skew(Bitmap src, float kx, float ky) {
+    public static Bitmap skew(final Bitmap src, final float kx, final float ky) {
         return skew(src, kx, ky, 0, 0, false);
     }
 
@@ -485,7 +481,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return 倾斜后的图片
      */
-    public static Bitmap skew(Bitmap src, float kx, float ky, boolean recycle) {
+    public static Bitmap skew(final Bitmap src, final float kx, final float ky, final boolean recycle) {
         return skew(src, kx, ky, 0, 0, recycle);
     }
 
@@ -499,7 +495,7 @@ public final class ImageUtils {
      * @param py  平移因子y
      * @return 倾斜后的图片
      */
-    public static Bitmap skew(Bitmap src, float kx, float ky, float px, float py) {
+    public static Bitmap skew(final Bitmap src, final float kx, final float ky, final float px, final float py) {
         return skew(src, kx, ky, px, py, false);
     }
 
@@ -514,7 +510,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return 倾斜后的图片
      */
-    public static Bitmap skew(Bitmap src, float kx, float ky, float px, float py, boolean recycle) {
+    public static Bitmap skew(final Bitmap src, final float kx, final float ky, final float px, final float py, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         Matrix matrix = new Matrix();
         matrix.setSkew(kx, ky, px, py);
@@ -532,7 +528,7 @@ public final class ImageUtils {
      * @param py      旋转点纵坐标
      * @return 旋转后的图片
      */
-    public static Bitmap rotate(Bitmap src, int degrees, float px, float py) {
+    public static Bitmap rotate(final Bitmap src, final int degrees, final float px, final float py) {
         return rotate(src, degrees, px, py, false);
     }
 
@@ -546,7 +542,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return 旋转后的图片
      */
-    public static Bitmap rotate(Bitmap src, int degrees, float px, float py, boolean recycle) {
+    public static Bitmap rotate(final Bitmap src, final int degrees, final float px, final float py, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         if (degrees == 0) return src;
         Matrix matrix = new Matrix();
@@ -562,7 +558,7 @@ public final class ImageUtils {
      * @param filePath 文件路径
      * @return 旋转角度
      */
-    public static int getRotateDegree(String filePath) {
+    public static int getRotateDegree(final String filePath) {
         int degree = 0;
         try {
             ExifInterface exifInterface = new ExifInterface(filePath);
@@ -593,7 +589,7 @@ public final class ImageUtils {
      * @param src 源图片
      * @return 圆形图片
      */
-    public static Bitmap toRound(Bitmap src) {
+    public static Bitmap toRound(final Bitmap src) {
         return toRound(src, false);
     }
 
@@ -604,7 +600,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return 圆形图片
      */
-    public static Bitmap toRound(Bitmap src, boolean recycle) {
+    public static Bitmap toRound(final Bitmap src, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         int width = src.getWidth();
         int height = src.getHeight();
@@ -629,7 +625,7 @@ public final class ImageUtils {
      * @param radius 圆角的度数
      * @return 圆角图片
      */
-    public static Bitmap toRoundCorner(Bitmap src, float radius) {
+    public static Bitmap toRoundCorner(final Bitmap src, final float radius) {
         return toRoundCorner(src, radius, false);
     }
 
@@ -641,7 +637,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return 圆角图片
      */
-    public static Bitmap toRoundCorner(Bitmap src, float radius, boolean recycle) {
+    public static Bitmap toRoundCorner(final Bitmap src, final float radius, final boolean recycle) {
         if (null == src) return null;
         int width = src.getWidth();
         int height = src.getHeight();
@@ -666,9 +662,9 @@ public final class ImageUtils {
      * @param radius 模糊半径
      * @return 模糊后的图片
      */
-    public static Bitmap fastBlur(Bitmap src,
-                                  @FloatRange(from = 0, to = 1, fromInclusive = false) float scale,
-                                  @FloatRange(from = 0, to = 25, fromInclusive = false) float radius) {
+    public static Bitmap fastBlur(final Bitmap src,
+                                  @FloatRange(from = 0, to = 1, fromInclusive = false) final float scale,
+                                  @FloatRange(from = 0, to = 25, fromInclusive = false) final float radius) {
         return fastBlur(src, scale, radius, false);
     }
 
@@ -682,9 +678,9 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return 模糊后的图片
      */
-    public static Bitmap fastBlur(Bitmap src,
-                                  @FloatRange(from = 0, to = 1, fromInclusive = false) float scale,
-                                  @FloatRange(from = 0, to = 25, fromInclusive = false) float radius,
+    public static Bitmap fastBlur(final Bitmap src,
+                                  @FloatRange(from = 0, to = 1, fromInclusive = false) final float scale,
+                                  @FloatRange(from = 0, to = 25, fromInclusive = false) final float radius,
                                   boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         int width = src.getWidth();
@@ -701,7 +697,7 @@ public final class ImageUtils {
         canvas.scale(scale, scale);
         canvas.drawBitmap(scaleBitmap, 0, 0, paint);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            scaleBitmap = renderScriptBlur(Utils.getContext(), scaleBitmap, radius);
+            scaleBitmap = renderScriptBlur(scaleBitmap, radius);
         } else {
             scaleBitmap = stackBlur(scaleBitmap, (int) radius, recycle);
         }
@@ -716,17 +712,17 @@ public final class ImageUtils {
      * renderScript模糊图片
      * <p>API大于17</p>
      *
-     * @param context 上下文
-     * @param src     源图片
-     * @param radius  模糊半径(0...25)
+     * @param src    源图片
+     * @param radius 模糊半径(0...25)
      * @return 模糊后的图片
      */
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-    public static Bitmap renderScriptBlur(Context context, Bitmap src, @FloatRange(from = 0, to = 25, fromInclusive = false) float radius) {
+    public static Bitmap renderScriptBlur(final Bitmap src,
+                                          @FloatRange(from = 0, to = 25, fromInclusive = false) final float radius) {
         if (isEmptyBitmap(src)) return null;
         RenderScript rs = null;
         try {
-            rs = RenderScript.create(context);
+            rs = RenderScript.create(Utils.getApp());
             rs.setMessageHandler(new RenderScript.RSMessageHandler());
             Allocation input = Allocation.createFromBitmap(rs, src, Allocation.MipmapControl.MIPMAP_NONE, Allocation
                     .USAGE_SCRIPT);
@@ -752,7 +748,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return stack模糊后的图片
      */
-    public static Bitmap stackBlur(Bitmap src, int radius, boolean recycle) {
+    public static Bitmap stackBlur(final Bitmap src, final int radius, final boolean recycle) {
         Bitmap ret;
         if (recycle) {
             ret = src;
@@ -964,7 +960,7 @@ public final class ImageUtils {
      * @param color       边框的颜色值
      * @return 带颜色边框图
      */
-    public static Bitmap addFrame(Bitmap src, int borderWidth, int color) {
+    public static Bitmap addFrame(final Bitmap src, final int borderWidth, final int color) {
         return addFrame(src, borderWidth, color, false);
     }
 
@@ -977,22 +973,22 @@ public final class ImageUtils {
      * @param recycle     是否回收
      * @return 带颜色边框图
      */
-    public static Bitmap addFrame(Bitmap src, int borderWidth, int color, boolean recycle) {
+    public static Bitmap addFrame(final Bitmap src, final int borderWidth, final int color, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         int doubleBorder = borderWidth << 1;
         int newWidth = src.getWidth() + doubleBorder;
         int newHeight = src.getHeight() + doubleBorder;
         Bitmap ret = Bitmap.createBitmap(newWidth, newHeight, src.getConfig());
         Canvas canvas = new Canvas(ret);
-        Rect rect = new Rect(0, 0, newWidth, newHeight);
+        //noinspection SuspiciousNameCombination
+        canvas.drawBitmap(src, borderWidth, borderWidth, null);
         Paint paint = new Paint();
         paint.setColor(color);
         paint.setStyle(Paint.Style.STROKE);
         // setStrokeWidth是居中画的，所以要两倍的宽度才能画，否则有一半的宽度是空的
         paint.setStrokeWidth(doubleBorder);
+        Rect rect = new Rect(0, 0, newWidth, newHeight);
         canvas.drawRect(rect, paint);
-        //noinspection SuspiciousNameCombination
-        canvas.drawBitmap(src, borderWidth, borderWidth, null);
         if (recycle && !src.isRecycled()) src.recycle();
         return ret;
     }
@@ -1004,7 +1000,7 @@ public final class ImageUtils {
      * @param reflectionHeight 倒影高度
      * @return 带倒影图片
      */
-    public static Bitmap addReflection(Bitmap src, int reflectionHeight) {
+    public static Bitmap addReflection(final Bitmap src, final int reflectionHeight) {
         return addReflection(src, reflectionHeight, false);
     }
 
@@ -1016,7 +1012,7 @@ public final class ImageUtils {
      * @param recycle          是否回收
      * @return 带倒影图片
      */
-    public static Bitmap addReflection(Bitmap src, int reflectionHeight, boolean recycle) {
+    public static Bitmap addReflection(final Bitmap src, final int reflectionHeight, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         // 原图与倒影之间的间距
         final int REFLECTION_GAP = 0;
@@ -1055,8 +1051,12 @@ public final class ImageUtils {
      * @param y        起始坐标y
      * @return 带有文字水印的图片
      */
-    public static Bitmap addTextWatermark(Bitmap src, String content, int textSize, int color, float x,
-                                          float y) {
+    public static Bitmap addTextWatermark(final Bitmap src,
+                                          final String content,
+                                          final int textSize,
+                                          final int color,
+                                          final float x,
+                                          final float y) {
         return addTextWatermark(src, content, textSize, color, x, y, false);
     }
 
@@ -1072,8 +1072,13 @@ public final class ImageUtils {
      * @param recycle  是否回收
      * @return 带有文字水印的图片
      */
-    public static Bitmap addTextWatermark(Bitmap src, String content, float textSize, int color, float x,
-                                          float y, boolean recycle) {
+    public static Bitmap addTextWatermark(final Bitmap src,
+                                          final String content,
+                                          final float textSize,
+                                          final int color,
+                                          final float x,
+                                          final float y,
+                                          final boolean recycle) {
         if (isEmptyBitmap(src) || content == null) return null;
         Bitmap ret = src.copy(src.getConfig(), true);
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -1097,7 +1102,7 @@ public final class ImageUtils {
      * @param alpha     透明度
      * @return 带有图片水印的图片
      */
-    public static Bitmap addImageWatermark(Bitmap src, Bitmap watermark, int x, int y, int alpha) {
+    public static Bitmap addImageWatermark(final Bitmap src, final Bitmap watermark, final int x, final int y, final int alpha) {
         return addImageWatermark(src, watermark, x, y, alpha, false);
     }
 
@@ -1112,7 +1117,7 @@ public final class ImageUtils {
      * @param recycle   是否回收
      * @return 带有图片水印的图片
      */
-    public static Bitmap addImageWatermark(Bitmap src, Bitmap watermark, int x, int y, int alpha, boolean recycle) {
+    public static Bitmap addImageWatermark(final Bitmap src, final Bitmap watermark, final int x, final int y, final int alpha, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         Bitmap ret = src.copy(src.getConfig(), true);
         if (!isEmptyBitmap(watermark)) {
@@ -1131,7 +1136,7 @@ public final class ImageUtils {
      * @param src 源图片
      * @return alpha位图
      */
-    public static Bitmap toAlpha(Bitmap src) {
+    public static Bitmap toAlpha(final Bitmap src) {
         return toAlpha(src, false);
     }
 
@@ -1142,7 +1147,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return alpha位图
      */
-    public static Bitmap toAlpha(Bitmap src, Boolean recycle) {
+    public static Bitmap toAlpha(final Bitmap src, final Boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         Bitmap ret = src.extractAlpha();
         if (recycle && !src.isRecycled()) src.recycle();
@@ -1155,7 +1160,7 @@ public final class ImageUtils {
      * @param src 源图片
      * @return 灰度图
      */
-    public static Bitmap toGray(Bitmap src) {
+    public static Bitmap toGray(final Bitmap src) {
         return toGray(src, false);
     }
 
@@ -1166,7 +1171,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return 灰度图
      */
-    public static Bitmap toGray(Bitmap src, boolean recycle) {
+    public static Bitmap toGray(final Bitmap src, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         Bitmap grayBitmap = Bitmap.createBitmap(src.getWidth(),
                 src.getHeight(), Bitmap.Config.ARGB_8888);
@@ -1189,7 +1194,7 @@ public final class ImageUtils {
      * @param format   格式
      * @return {@code true}: 成功<br>{@code false}: 失败
      */
-    public static boolean save(Bitmap src, String filePath, CompressFormat format) {
+    public static boolean save(final Bitmap src, final String filePath, final CompressFormat format) {
         return save(src, FileUtils.getFileByPath(filePath), format, false);
     }
 
@@ -1201,7 +1206,7 @@ public final class ImageUtils {
      * @param format 格式
      * @return {@code true}: 成功<br>{@code false}: 失败
      */
-    public static boolean save(Bitmap src, File file, CompressFormat format) {
+    public static boolean save(final Bitmap src, final File file, final CompressFormat format) {
         return save(src, file, format, false);
     }
 
@@ -1214,7 +1219,7 @@ public final class ImageUtils {
      * @param recycle  是否回收
      * @return {@code true}: 成功<br>{@code false}: 失败
      */
-    public static boolean save(Bitmap src, String filePath, CompressFormat format, boolean recycle) {
+    public static boolean save(final Bitmap src, final String filePath, final CompressFormat format, final boolean recycle) {
         return save(src, FileUtils.getFileByPath(filePath), format, recycle);
     }
 
@@ -1227,7 +1232,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return {@code true}: 成功<br>{@code false}: 失败
      */
-    public static boolean save(Bitmap src, File file, CompressFormat format, boolean recycle) {
+    public static boolean save(final Bitmap src, final File file, final CompressFormat format, final boolean recycle) {
         if (isEmptyBitmap(src) || !FileUtils.createOrExistsFile(file)) return false;
         System.out.println(src.getWidth() + ", " + src.getHeight());
         OutputStream os = null;
@@ -1250,7 +1255,7 @@ public final class ImageUtils {
      * @param file 　文件
      * @return {@code true}: 是<br>{@code false}: 否
      */
-    public static boolean isImage(File file) {
+    public static boolean isImage(final File file) {
         return file != null && isImage(file.getPath());
     }
 
@@ -1260,7 +1265,7 @@ public final class ImageUtils {
      * @param filePath 　文件路径
      * @return {@code true}: 是<br>{@code false}: 否
      */
-    public static boolean isImage(String filePath) {
+    public static boolean isImage(final String filePath) {
         String path = filePath.toUpperCase();
         return path.endsWith(".PNG") || path.endsWith(".JPG")
                 || path.endsWith(".JPEG") || path.endsWith(".BMP")
@@ -1273,7 +1278,7 @@ public final class ImageUtils {
      * @param filePath 文件路径
      * @return 图片类型
      */
-    public static String getImageType(String filePath) {
+    public static String getImageType(final String filePath) {
         return getImageType(FileUtils.getFileByPath(filePath));
     }
 
@@ -1283,7 +1288,7 @@ public final class ImageUtils {
      * @param file 文件
      * @return 图片类型
      */
-    public static String getImageType(File file) {
+    public static String getImageType(final File file) {
         if (file == null) return null;
         InputStream is = null;
         try {
@@ -1303,7 +1308,7 @@ public final class ImageUtils {
      * @param is 图片输入流
      * @return 图片类型
      */
-    public static String getImageType(InputStream is) {
+    public static String getImageType(final InputStream is) {
         if (is == null) return null;
         try {
             byte[] bytes = new byte[8];
@@ -1320,7 +1325,7 @@ public final class ImageUtils {
      * @param bytes bitmap的前8字节
      * @return 图片类型
      */
-    public static String getImageType(byte[] bytes) {
+    public static String getImageType(final byte[] bytes) {
         if (isJPEG(bytes)) return "JPEG";
         if (isGIF(bytes)) return "GIF";
         if (isPNG(bytes)) return "PNG";
@@ -1328,19 +1333,19 @@ public final class ImageUtils {
         return null;
     }
 
-    private static boolean isJPEG(byte[] b) {
+    private static boolean isJPEG(final byte[] b) {
         return b.length >= 2
                 && (b[0] == (byte) 0xFF) && (b[1] == (byte) 0xD8);
     }
 
-    private static boolean isGIF(byte[] b) {
+    private static boolean isGIF(final byte[] b) {
         return b.length >= 6
                 && b[0] == 'G' && b[1] == 'I'
                 && b[2] == 'F' && b[3] == '8'
                 && (b[4] == '7' || b[4] == '9') && b[5] == 'a';
     }
 
-    private static boolean isPNG(byte[] b) {
+    private static boolean isPNG(final byte[] b) {
         return b.length >= 8
                 && (b[0] == (byte) 137 && b[1] == (byte) 80
                 && b[2] == (byte) 78 && b[3] == (byte) 71
@@ -1348,7 +1353,7 @@ public final class ImageUtils {
                 && b[6] == (byte) 26 && b[7] == (byte) 10);
     }
 
-    private static boolean isBMP(byte[] b) {
+    private static boolean isBMP(final byte[] b) {
         return b.length >= 2
                 && (b[0] == 0x42) && (b[1] == 0x4d);
     }
@@ -1359,7 +1364,7 @@ public final class ImageUtils {
      * @param src 源图片
      * @return {@code true}: 是<br>{@code false}: 否
      */
-    private static boolean isEmptyBitmap(Bitmap src) {
+    private static boolean isEmptyBitmap(final Bitmap src) {
         return src == null || src.getWidth() == 0 || src.getHeight() == 0;
     }
 
@@ -1375,7 +1380,7 @@ public final class ImageUtils {
      * @param newHeight 新高度
      * @return 缩放压缩后的图片
      */
-    public static Bitmap compressByScale(Bitmap src, int newWidth, int newHeight) {
+    public static Bitmap compressByScale(final Bitmap src, final int newWidth, final int newHeight) {
         return scale(src, newWidth, newHeight, false);
     }
 
@@ -1388,7 +1393,7 @@ public final class ImageUtils {
      * @param recycle   是否回收
      * @return 缩放压缩后的图片
      */
-    public static Bitmap compressByScale(Bitmap src, int newWidth, int newHeight, boolean recycle) {
+    public static Bitmap compressByScale(final Bitmap src, final int newWidth, final int newHeight, final boolean recycle) {
         return scale(src, newWidth, newHeight, recycle);
     }
 
@@ -1400,7 +1405,7 @@ public final class ImageUtils {
      * @param scaleHeight 缩放高度倍数
      * @return 缩放压缩后的图片
      */
-    public static Bitmap compressByScale(Bitmap src, float scaleWidth, float scaleHeight) {
+    public static Bitmap compressByScale(final Bitmap src, final float scaleWidth, final float scaleHeight) {
         return scale(src, scaleWidth, scaleHeight, false);
     }
 
@@ -1413,7 +1418,7 @@ public final class ImageUtils {
      * @param recycle     是否回收
      * @return 缩放压缩后的图片
      */
-    public static Bitmap compressByScale(Bitmap src, float scaleWidth, float scaleHeight, boolean recycle) {
+    public static Bitmap compressByScale(final Bitmap src, final float scaleWidth, final float scaleHeight, final boolean recycle) {
         return scale(src, scaleWidth, scaleHeight, recycle);
     }
 
@@ -1424,7 +1429,7 @@ public final class ImageUtils {
      * @param quality 质量
      * @return 质量压缩后的图片
      */
-    public static Bitmap compressByQuality(Bitmap src, @IntRange(from = 0, to = 100) int quality) {
+    public static Bitmap compressByQuality(final Bitmap src, @IntRange(from = 0, to = 100) final int quality) {
         return compressByQuality(src, quality, false);
     }
 
@@ -1436,7 +1441,7 @@ public final class ImageUtils {
      * @param recycle 是否回收
      * @return 质量压缩后的图片
      */
-    public static Bitmap compressByQuality(Bitmap src, @IntRange(from = 0, to = 100) int quality, boolean recycle) {
+    public static Bitmap compressByQuality(final Bitmap src, @IntRange(from = 0, to = 100) final int quality, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         src.compress(Bitmap.CompressFormat.JPEG, quality, baos);
@@ -1452,7 +1457,7 @@ public final class ImageUtils {
      * @param maxByteSize 允许最大值字节数
      * @return 质量压缩压缩过的图片
      */
-    public static Bitmap compressByQuality(Bitmap src, long maxByteSize) {
+    public static Bitmap compressByQuality(final Bitmap src, final long maxByteSize) {
         return compressByQuality(src, maxByteSize, false);
     }
 
@@ -1464,7 +1469,7 @@ public final class ImageUtils {
      * @param recycle     是否回收
      * @return 质量压缩压缩过的图片
      */
-    public static Bitmap compressByQuality(Bitmap src, long maxByteSize, boolean recycle) {
+    public static Bitmap compressByQuality(final Bitmap src, final long maxByteSize, final boolean recycle) {
         if (isEmptyBitmap(src) || maxByteSize <= 0) return null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int quality = 100;
@@ -1486,7 +1491,7 @@ public final class ImageUtils {
      * @param sampleSize 采样率大小
      * @return 按采样率压缩后的图片
      */
-    public static Bitmap compressBySampleSize(Bitmap src, int sampleSize) {
+    public static Bitmap compressBySampleSize(final Bitmap src, final int sampleSize) {
         return compressBySampleSize(src, sampleSize, false);
     }
 
@@ -1498,7 +1503,7 @@ public final class ImageUtils {
      * @param recycle    是否回收
      * @return 按采样率压缩后的图片
      */
-    public static Bitmap compressBySampleSize(Bitmap src, int sampleSize, boolean recycle) {
+    public static Bitmap compressBySampleSize(final Bitmap src, final int sampleSize, final boolean recycle) {
         if (isEmptyBitmap(src)) return null;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = sampleSize;
@@ -1509,7 +1514,7 @@ public final class ImageUtils {
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
     }
 
-    private static boolean isSpace(String s) {
+    private static boolean isSpace(final String s) {
         if (s == null) return true;
         for (int i = 0, len = s.length(); i < len; ++i) {
             if (!Character.isWhitespace(s.charAt(i))) {
